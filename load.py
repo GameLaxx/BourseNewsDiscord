@@ -1,15 +1,12 @@
 import json
 
 def get_navs():
-    with open("txt/register.txt", "r+") as f:
-        return f.readlines()
+    with open("txt/register.json", "r+") as f:
+        return json.load(f)
 
 def set_navs(navs):
-    with open("txt/register.txt", "w+") as f:
-        for i in range(len(navs)):
-            f.write(navs[i])
-            if i != len(navs) - 1:
-                f.write("\n")
+    with open("txt/register.json", "w+", encoding="utf-8") as f:
+        json.dump(navs, f, ensure_ascii=False, indent=4)
 
 def get_memory():
     with open("txt/memory.json", "r+") as f:

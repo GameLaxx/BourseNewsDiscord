@@ -1,0 +1,18 @@
+{
+    "EURONEXT-TTE": {
+        "color": [
+            224,
+            208,
+            219
+        ],
+        "name": "TOTALENERGIES"
+    },
+    "EURONEXT-MC": {
+        "color": [
+            36,
+            38,
+            54
+        ],
+        "name": "LVMH"
+    }
+}

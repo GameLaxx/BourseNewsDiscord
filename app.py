@@ -24,14 +24,23 @@ async def send_news_func():
     channel = bot.get_channel(1370001423445659699)
     for nav in navs:
         news : list[News] = await get_news(nav)
+        fresh = False
         if nav not in memory:
             memory[nav] = ""
+            fresh = True
         for _new in news:
             if _new.title == memory[nav]:
                 break # stop sending when find same message
-            await channel.send(str(_new))
+            embed = discord.Embed(
+                title=navs[nav]["name"],
+                description=f"Provider : {_new.provider}.\n**{_new.title}**\nTo learn more, go on {_new.url} !",
+                color=discord.Color.from_rgb(navs[nav]["color"][0], navs[nav]["color"][1], navs[nav]["color"][2])  # bar color
+            )
+            embed.set_footer(text="BourseNewsBot • TradingView")
+            await channel.send(embed=embed)
+            if fresh: # when adding new nav => only first news
+                break
         memory[nav] = news[0].title
-
     set_memory(memory)
         
 @tasks.loop(hours=1)
@@ -53,12 +62,13 @@ async def test(ctx):
     
 @bot.command()
 async def register(ctx, nav):
-    if not (await check_nav(nav)):
+    ret = await check_nav(nav)
+    if ret == None:
         await ctx.send(f"{nav} doesn't lead to a page on Trading View.")
         return
-    navs.append(nav)
+    navs[nav] = ret
     set_navs(navs)
-    await ctx.send(f"{nav} has been registered !")
+    await ctx.send(f"{navs[nav]['name']} has been registered !")
 
 @bot.command()
 async def force(ctx):
