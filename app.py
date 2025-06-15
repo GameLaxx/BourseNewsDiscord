@@ -13,7 +13,7 @@ memory : dict = get_memory()
 intents = discord.Intents.default()
 intents.message_content = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 #----------------------------------------------------------------------------------
 # Bot automation
@@ -65,7 +65,7 @@ async def test(ctx):
 async def register(ctx, nav):
     ret = await check_nav(nav)
     if ret == None:
-        await ctx.send(f"{nav} doesn't lead to a page on Trading View.")
+        await ctx.send(f"https://fr.tradingview.com/symbols/{nav}/news/ doesn't lead to a page on Trading View.")
         return
     navs[nav] = ret
     set_navs(navs)
@@ -119,6 +119,17 @@ async def unping(ctx, nav):
     navs[nav]["ping"].remove(ctx.author.id)
     set_navs(navs)
     await ctx.send(f"User removed from ping list of {nav} !")
+
+@bot.command()
+async def help(ctx):
+    ret = "**Here are all the commands for this bot !**\n"
+    ret += "'!register SYMBOL' allows to make the bot listen to a news page on Trading View.\n"
+    ret += "'!delete SYMBOL' stops the bot from listening to a news page on Trading View.\n"
+    ret += "'!list' shows all symbols, their equivalent name and the list of pinged people.\n"
+    ret += "'!ping SYMBOL' allows the author to be pinged when a news about this symbol comes out.\n"
+    ret += "'!unping SYMBOL' stops the author from being pinged when a news about this symbol comes out.\n"
+    ret += "'!force' forces the bot to check for news. This command is automatically called every hour.\n"
+    await ctx.send(ret)
 
 #----------------------------------------------------------------------------------
 # Bot launching
