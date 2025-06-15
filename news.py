@@ -51,6 +51,7 @@ async def check_nav(nav):
             await page.wait_for_selector(".title-HDE_EEoW")
             full_name = await page.query_selector(".title-HDE_EEoW")
             ret["name"] = await full_name.inner_text()
+            ret["ping"] = []
             await browser.close()
         return ret
     except:

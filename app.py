@@ -32,9 +32,11 @@ async def send_news_func():
                 break # stop sending when find same message
             embed = discord.Embed(
                 title=navs[nav]["name"],
-                description=f"Provider : {_new.provider}.\n**{_new.title}**\nTo learn more, go on {_new.url} !",
+                description=f"Provider : {_new.provider}.\n**{_new.title}**\nTo learn more, go on {_new.url} !\n",
                 color=discord.Color.from_rgb(navs[nav]["color"][0], navs[nav]["color"][1], navs[nav]["color"][2])  # bar color
             )
+            for ping in navs[nav]["ping"]:
+                embed.description += f"<@{ping}>"
             embed.set_footer(text="BourseNewsBot • TradingView")
             await channel.send(embed=embed)
             if fresh: # when adding new nav => only first news
@@ -74,12 +76,49 @@ async def delete(ctx, nav):
     if nav in navs:
         navs.pop(nav)
         set_navs(navs)
-    await ctx.send(f"{navs[nav]['name']} has been deleted !")
+    await ctx.send(f"{nav} has been deleted !")
 
 @bot.command()
 async def force(ctx):
+    await ctx.send("Send news forced !")
     await send_news_func()
-    print("Send news forced !")
+
+@bot.command()
+async def list(ctx):
+    ret = "Here is a list of all registered items :\n"
+    for nav in navs:
+        ret += f"{navs[nav]['name']} (__symbol__ : {nav})"
+        if navs[nav]['ping'] != []:
+            ret += " [**ping**:"
+            for ping in navs[nav]['ping']:
+                ret += " " + (await bot.fetch_user(ping)).name
+            ret += "]"
+        ret += "\n"
+    await ctx.send(ret)
+
+@bot.command()
+async def ping(ctx, nav):
+    if nav not in navs:
+        await ctx.send(f"Symbol {nav} not found..")
+        return
+    if ctx.author.name in navs[nav]["ping"]:
+        await ctx.send(f"User already in ping list of {nav} !")
+        return
+    navs[nav]["ping"].append(ctx.author.id)
+    set_navs(navs)
+    await ctx.send(f"User added to ping list of {nav} !")
+
+@bot.command()
+async def unping(ctx, nav):
+    if nav not in navs:
+        await ctx.send(f"Symbol {nav} not found..")
+        return
+    if ctx.author.name in navs[nav]["ping"]:
+        await ctx.send(f"User not in ping list of {nav} !")
+        return
+    navs[nav]["ping"].remove(ctx.author.id)
+    set_navs(navs)
+    await ctx.send(f"User removed from ping list of {nav} !")
 
 #----------------------------------------------------------------------------------
 # Bot launching
