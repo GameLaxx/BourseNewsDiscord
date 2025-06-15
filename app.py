@@ -1,11 +1,10 @@
-import asyncio
 import discord
 from discord.ext import commands, tasks
 from news import News, get_news, check_nav
 from load import set_navs, get_navs, set_memory, get_memory
 
-navs = get_navs()
-memory = get_memory()
+navs : dict = get_navs()
+memory : dict = get_memory()
 
 #----------------------------------------------------------------------------------
 # Bot setup
@@ -69,6 +68,13 @@ async def register(ctx, nav):
     navs[nav] = ret
     set_navs(navs)
     await ctx.send(f"{navs[nav]['name']} has been registered !")
+    
+@bot.command()
+async def delete(ctx, nav):
+    if nav in navs:
+        navs.pop(nav)
+        set_navs(navs)
+    await ctx.send(f"{navs[nav]['name']} has been deleted !")
 
 @bot.command()
 async def force(ctx):
