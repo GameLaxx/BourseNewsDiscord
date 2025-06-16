@@ -1,17 +1,23 @@
 import json
 
-def get_navs():
-    with open("txt/register.json", "r+") as f:
+def get_json(path):
+    with open(path, "r+") as f:
         return json.load(f)
+def set_json(path, dic):
+    with open(path, "w+", encoding="utf-8") as f:
+        json.dump(dic, f, ensure_ascii=False, indent=4)
 
+def get_navs():
+    return get_json("txt/register.json")
 def set_navs(navs):
-    with open("txt/register.json", "w+", encoding="utf-8") as f:
-        json.dump(navs, f, ensure_ascii=False, indent=4)
+    set_json("txt/register.json", navs)
 
 def get_memory():
-    with open("txt/memory.json", "r+") as f:
-        return json.load(f)
-    
+    return get_json("txt/memory.json")    
 def set_memory(memory):
-    with open("txt/memory.json", "w+", encoding="utf-8") as f:
-        json.dump(memory, f, ensure_ascii=False, indent=4)
+    set_json("txt/memory.json", memory)
+    
+def get_settings():
+    return get_json("txt/settings.json")    
+def set_settings(settings):
+    set_json("txt/settings.json", settings)

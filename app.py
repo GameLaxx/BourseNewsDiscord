@@ -1,10 +1,14 @@
 import discord
+from datetime import timedelta
 from discord.ext import commands, tasks
 from news import News, get_news, check_nav
-from load import set_navs, get_navs, set_memory, get_memory
+from load import set_navs, get_navs, set_memory, get_memory, set_settings, get_settings
 
 navs : dict = get_navs()
 memory : dict = get_memory()
+settings : dict = get_settings()
+
+send_news_auto = None
 
 #----------------------------------------------------------------------------------
 # Bot setup
@@ -23,10 +27,12 @@ async def send_news_func():
     channel = bot.get_channel(1370001423445659699)
     for nav in navs:
         news : list[News] = await get_news(nav)
-        fresh = False
+        break_first = False
+        if "(actualisé)" in news[0].title:
+            break_first = True
         if nav not in memory:
             memory[nav] = ""
-            fresh = True
+            break_first = True
         for _new in news:
             if _new.title == memory[nav]:
                 break # stop sending when find same message
@@ -39,14 +45,23 @@ async def send_news_func():
                 embed.description += f"<@{ping}>"
             embed.set_footer(text="BourseNewsBot • TradingView")
             await channel.send(embed=embed)
-            if fresh: # when adding new nav => only first news
+            if break_first: # when adding new nav or updated news => only first news
                 break
         memory[nav] = news[0].title
     set_memory(memory)
         
-@tasks.loop(hours=1)
-async def send_news_auto():
-    await send_news_func()
+def create_send_news_loop(time : str):
+    time = time.split(":")
+    if len(time) != 3:
+        return None
+    try:
+        interval = timedelta(hours=int(time[0]), minutes=int(time[1]), seconds=int(time[2]))
+    except:
+        return None
+    @tasks.loop(seconds=interval.total_seconds())
+    async def send_news_auto():
+        await send_news_func()
+    return send_news_auto
 
 #----------------------------------------------------------------------------------
 # Bot behaviour
@@ -54,7 +69,13 @@ async def send_news_auto():
 
 @bot.event
 async def on_ready():
-    print(f"Connected as {bot.user} !")
+    global send_news_auto
+    print(f"Connected as {bot.user} !") 
+    send_news_auto = create_send_news_loop(settings["news_auto"])
+    if send_news_auto == None:
+        settings["news_auto"] = "1:0:0"
+        send_news_auto = create_send_news_loop("1:0:0")
+        set_settings(settings)
     send_news_auto.start()
 
 @bot.command()
@@ -119,6 +140,32 @@ async def unping(ctx, nav):
     navs[nav]["ping"].remove(ctx.author.id)
     set_navs(navs)
     await ctx.send(f"User removed from ping list of {nav} !")
+
+@bot.command()
+async def get(ctx, nav):
+    if nav not in navs:
+        await ctx.send(f"Symbol {nav} not found..")
+        return
+    await ctx.send(f"You can see all the news about {navs[nav]['name']} here : https://fr.tradingview.com/symbols/{nav}/news/")
+
+@bot.command()
+async def params(ctx, setting = ""):
+    if setting == "":
+        ret = "Here are the current settings :\n"
+        for key in settings:
+            ret += f"{key} : {settings[key]}"
+        await ctx.send(ret)
+        return
+    if create_send_news_loop(setting) == None:
+        await ctx.send("Problem occured : News auto setting should be in format 'H:M:S'.")
+    global send_news_auto
+    if send_news_auto.is_running():
+        send_news_auto.cancel()
+    send_news_auto = create_send_news_loop(setting)
+    send_news_auto.start()
+    settings["news_auto"] = setting
+    set_settings(settings)
+    await ctx.send(f"News auto setting has been set to : '{setting}'.")
 
 @bot.command()
 async def help(ctx):
