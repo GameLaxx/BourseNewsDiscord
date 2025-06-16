@@ -4,11 +4,20 @@ from discord.ext import commands, tasks
 from news import News, get_news, check_nav
 from load import set_navs, get_navs, set_memory, get_memory, set_settings, get_settings
 
-navs : dict = get_navs()
+navs : dict[str] = get_navs()
 memory : dict = get_memory()
 settings : dict = get_settings()
 
 send_news_auto = None
+
+def word_to_nav(word : str):
+    word = word.lower()
+    for nav in navs:
+        if word in nav.lower():
+            return nav
+        if word in navs[nav]["name"].lower():
+            return nav
+    return None
 
 #----------------------------------------------------------------------------------
 # Bot setup
@@ -27,6 +36,7 @@ async def send_news_func():
     channel = bot.get_channel(1370001423445659699)
     for nav in navs:
         news : list[News] = await get_news(nav)
+        news[0].title += " (actualisé)"
         break_first = False
         if "(actualisé)" in news[0].title:
             break_first = True
@@ -94,10 +104,11 @@ async def register(ctx, nav):
     
 @bot.command()
 async def delete(ctx, nav):
-    if nav in navs:
-        navs.pop(nav)
+    w_nav = word_to_nav(nav)
+    if w_nav != None:
+        navs.pop(w_nav)
         set_navs(navs)
-    await ctx.send(f"{nav} has been deleted !")
+    await ctx.send(f"{w_nav} has been deleted !")
 
 @bot.command()
 async def force(ctx):
@@ -105,7 +116,7 @@ async def force(ctx):
     await send_news_func()
 
 @bot.command()
-async def list(ctx):
+async def show(ctx):
     ret = "Here is a list of all registered items :\n"
     for nav in navs:
         ret += f"{navs[nav]['name']} (__symbol__ : {nav})"
@@ -119,34 +130,37 @@ async def list(ctx):
 
 @bot.command()
 async def ping(ctx, nav):
-    if nav not in navs:
+    w_nav = word_to_nav(nav)
+    if w_nav == None:
         await ctx.send(f"Symbol {nav} not found..")
         return
-    if ctx.author.name in navs[nav]["ping"]:
-        await ctx.send(f"User already in ping list of {nav} !")
+    if ctx.author.name in navs[w_nav]["ping"]:
+        await ctx.send(f"User already in ping list of {w_nav} !")
         return
-    navs[nav]["ping"].append(ctx.author.id)
+    navs[w_nav]["ping"].append(ctx.author.id)
     set_navs(navs)
-    await ctx.send(f"User added to ping list of {nav} !")
+    await ctx.send(f"User added to ping list of {w_nav} !")
 
 @bot.command()
 async def unping(ctx, nav):
-    if nav not in navs:
+    w_nav = word_to_nav(nav)
+    if w_nav == None:
         await ctx.send(f"Symbol {nav} not found..")
         return
-    if ctx.author.name in navs[nav]["ping"]:
-        await ctx.send(f"User not in ping list of {nav} !")
+    if ctx.author.name in navs[w_nav]["ping"]:
+        await ctx.send(f"User not in ping list of {w_nav} !")
         return
-    navs[nav]["ping"].remove(ctx.author.id)
+    navs[w_nav]["ping"].remove(ctx.author.id)
     set_navs(navs)
-    await ctx.send(f"User removed from ping list of {nav} !")
+    await ctx.send(f"User removed from ping list of {w_nav} !")
 
 @bot.command()
 async def get(ctx, nav):
-    if nav not in navs:
+    w_nav = word_to_nav(nav)
+    if w_nav == None:
         await ctx.send(f"Symbol {nav} not found..")
         return
-    await ctx.send(f"You can see all the news about {navs[nav]['name']} here : https://fr.tradingview.com/symbols/{nav}/news/")
+    await ctx.send(f"You can see all the news about {navs[w_nav]['name']} here : https://fr.tradingview.com/symbols/{w_nav}/news/")
 
 @bot.command()
 async def params(ctx, setting = ""):
@@ -172,7 +186,7 @@ async def help(ctx):
     ret = "**Here are all the commands for this bot !**\n"
     ret += "'!register SYMBOL' allows to make the bot listen to a news page on Trading View.\n"
     ret += "'!delete SYMBOL' stops the bot from listening to a news page on Trading View.\n"
-    ret += "'!list' shows all symbols, their equivalent name and the list of pinged people.\n"
+    ret += "'!show' shows all symbols, their equivalent name and the list of pinged people.\n"
     ret += "'!ping SYMBOL' allows the author to be pinged when a news about this symbol comes out.\n"
     ret += "'!unping SYMBOL' stops the author from being pinged when a news about this symbol comes out.\n"
     ret += "'!force' forces the bot to check for news. This command is automatically called every hour.\n"
