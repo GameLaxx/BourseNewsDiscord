@@ -36,7 +36,6 @@ async def send_news_func():
     channel = bot.get_channel(1370001423445659699)
     for nav in navs:
         news : list[News] = await get_news(nav)
-        news[0].title += " (actualisé)"
         break_first = False
         if "(actualisé)" in news[0].title:
             break_first = True
