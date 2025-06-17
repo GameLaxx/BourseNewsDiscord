@@ -5,7 +5,7 @@ from news import News, get_news, check_nav
 from load import set_navs, get_navs, set_memory, get_memory, set_settings, get_settings
 
 navs : dict[str] = get_navs()
-memory : dict = get_memory()
+memories : dict = get_memory()
 settings : dict = get_settings()
 
 send_news_auto = None
@@ -36,14 +36,12 @@ async def send_news_func():
     channel = bot.get_channel(1370001423445659699)
     for nav in navs:
         news : list[News] = await get_news(nav)
-        break_first = False
-        if "(actualisé)" in news[0].title:
-            break_first = True
-        if nav not in memory:
-            memory[nav] = ""
-            break_first = True
+        fresh = False
+        if nav not in memories:
+            memories[nav] = ""
+            fresh = True
         for _new in news:
-            if _new.title == memory[nav]:
+            if _new.title == memories[nav]:
                 break # stop sending when find same message
             embed = discord.Embed(
                 title=navs[nav]["name"],
@@ -54,10 +52,12 @@ async def send_news_func():
                 embed.description += f"<@{ping}>"
             embed.set_footer(text="BourseNewsBot • TradingView")
             await channel.send(embed=embed)
-            if break_first: # when adding new nav or updated news => only first news
+            if memories[nav] in _new.title:
+                break # stop sending when find message updated
+            if fresh: # when adding new nav or updated news => only first news
                 break
-        memory[nav] = news[0].title
-    set_memory(memory)
+        memories[nav] = news[0].title
+    set_memory(memories)
         
 def create_send_news_loop(time : str):
     time = time.split(":")
@@ -160,6 +160,14 @@ async def get(ctx, nav):
         await ctx.send(f"Symbol {nav} not found..")
         return
     await ctx.send(f"You can see all the news about {navs[w_nav]['name']} here : https://fr.tradingview.com/symbols/{w_nav}/news/")
+
+@bot.command()
+async def memory(ctx, nav):
+    w_nav = word_to_nav(nav)
+    if w_nav == None:
+        await ctx.send(f"Symbol {nav} not found..")
+        return
+    await ctx.send(f"Last memory for {w_nav} : {memories[w_nav]}")
 
 @bot.command()
 async def params(ctx, setting = ""):
